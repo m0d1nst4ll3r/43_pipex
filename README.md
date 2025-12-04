@@ -29,27 +29,31 @@ file1 > cmd1 > cmd2 > file2
 
 use heredoc (?)
 
-### Thoughts
+### Thoughts/Progress
 
-If they give us access, it probably means we need to use it to check for the files we're using as input and output (if we have read allowed for input and write for output). But open would already return -1 with errno set so what's the use?
+Assuming we're doing the infinite cmd bonus (very easy) but not heredoc yet:
 
-We'll have to fork our program into 2 copies and each copy will have to execve a program. But then those programs need to communicate so we need to wire the output (stdout) of the first program to the input (stdin) of the other using a pipe. Probably.
+First have to decompose args. 1st should be file, last should be file, in-between should be cmds.
 
-For the files, to wire them to the programs we need to open them first (one in rdonly, the other in wronly), then we need to dup2 the fd returned by open into the child process' stdin fd (STDIN\_FILENO) or stdout (STDOUT\_FILENO). Probably.
+There are always argc - 3 commands.
 
-Not sure what unlink is used for.
+For each pair of commands, need a pipe. Need num_commands - 1 pipes.
 
-waitpid would be used to wait for the child processes to terminate. Not sure when or how we need to wait, also not sure how the pipe would be used exactly. Apparently pipes have a max size to their buffer, so they should be read instantly as the other program is writing into them. But idk how to tell for example a `wc -l` program to wait for `ls -l` to have finished writing before executing. In fact, I can't really tell wc or ls to do anything in particular, right? Even how to wire their stdin/stdout is not clear to me.
+For each command, need to decompose it in its own argv. Note that it might be pretty hard to handle awk { } (we'll handle this later).
 
-Will have to parse args very carefully, bonusless means 5 args exactly, bonus means at least 5 but possibly more. For execve, need to split the string by spaces to pass args to the new program (conveniently, the first arg should be the program name, which makes sense).
+For each command, need to find its pathname.
 
-In case of non-existing file or no perms or it's a directory etc etc, need to handle errors exactly like the shell when it does `< file1 cmd1 | cm2 > file2`.
+For the two files, need to open them (O_RDONLY, O_WRONLY, O_CREAT, with the right mode 644 with bit mask).
 
-### Exploring
+Need to fork as many times as we have commands. Each fork needs to dup its input and output.
 
-Found a solution to the env thing. You can have 3 arguments to a main function. argc, argv, and *envp*. Which makes sense given the arguments of the execve function (pathname, then argv and envp). envp is exactly like argv, it ends with NULL, and every string is a `key=value` format. You can simply parse this to find the `PATH=` string then decompose the paths and test them one by one.
+- 1st command dups file to input, output into 1st pipe's write.
+- 2nd command dups 1st pipe's read to input, output into 2nd pipe's write.
+- 3rd command dups 2nd pipe's read to input, output into 3nd pipe's write.
+- etc...
+- nth command dups (n-1)th pipe's read to input, output into file.
 
-Paths should be tested from left to right like the shell.
+Confused about which fds need to be closed and why (gotta research this more). For 2 commands, 1st needs to close the pipe's read and the 2nd needs to close the pipe's write, but I don't clearly understand why yet.
 
 ### Error management
 
@@ -66,3 +70,9 @@ What happens if:
 - PATH is not even set (unset PATH)
 
 - Could any functions I'm using fail? e.g fork, execve, dup2, pipe
+  - pipe can fail (-1 ret)
+  - fork can fail (-1 ret)
+
+### Final program steps
+
+Depends on error management, have to research errors more.
