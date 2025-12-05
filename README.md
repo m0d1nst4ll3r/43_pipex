@@ -60,14 +60,22 @@ Confused about which fds need to be closed and why (gotta research this more). F
 What happens if:
 
 - file1 doesn't exist/can't be read
+    - perror with file name, command is not executed
+    - Other commands in pipe chain are still executed, provided their files are correct
+    - stdin and stdout are still redirected, albeit the stream will be empty if the command couldn't execute
+        - Ex: `< doesntexist ls | cat` does not display anything nor does it open stdin like a simple cat would
 
 - file2 doesn't exist/can't be written to
+    - Same as above
 
 - cmd1 or cmd 2 aren't found anywhere
+    - Command is not found (printed like perror)
 
 - PATH is empty
+    - Command is not found (printed like perror)
 
 - PATH is not even set (unset PATH)
+    - Same as if PATH is empty
 
 - Could any functions I'm using fail? e.g fork, execve, dup2, pipe
   - pipe can fail (-1 ret)
