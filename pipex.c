@@ -52,9 +52,11 @@
  *
  * A "here_doc" file will cause pipex to open stdin instead for heredoc input.
  *	It will wait for LIMITER to close stdin. If input is too lengthy for a
- *	pipe buffer size (taken to be 66536), a temporary file will be created.
+ *	pipe buffer size (taken to be 65536), a temporary file will be created.
  * Additionally, "here_doc" also causes pipex to ADD to file2 instead of
  *	truncating it. As such file2 is opened with O_WRONLY | O_CREAT | O_APPEND.
+ *
+ * Note that created files have their chmod set to 0644.
  *
  * Note: some commands built into the shell might work natively without a PATH,
  *	such as `pwd`, `cd`, `echo`, but pipex will not find them without a PATH.
