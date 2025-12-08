@@ -6,12 +6,170 @@
 /*   By: rapohlen <rapohlen@student.42.fr>          +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2025/12/07 14:30:39 by rapohlen          #+#    #+#             */
-/*   Updated: 2025/12/07 20:28:15 by rapohlen         ###   ########.fr       */
+/*   Updated: 2025/12/08 12:37:27 by rapohlen         ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
 #include <pipex.h>
 
+<<<<<<< HEAD
+static char	*build_pathname(char *path, char *bin, size_t bin_len)
+{
+	char	*pathname;
+	size_t	len;
+
+	len = 0;
+	while (path[len] && path[len] != ':')
+		len++;
+	pathname = malloc(len + bin_len + 2);
+	if (!pathname)
+		return (NULL);
+	ft_strlcpy(pathname, path, len + 1);
+	ft_strcat(pathname, "/");
+	ft_strcat(pathname, bin);
+	return (pathname);
+}
+
+static char	*test_path(char *path, char *bin)
+{
+	char	*pathname;
+	size_t	bin_len;
+
+	bin_len = ft_strlen(bin);
+	pathname = build_pathname(path, bin, bin_len);
+	if (!pathname)
+		return (NULL); //TODO might exit here instead (if a malloc fails, makes more sense to stop everything)
+	if (!access(pathname, X_OK))
+		return (pathname);
+	free(pathname);
+	return (NULL);
+}
+
+// Returns valid pathname for bin or NULL
+char	*get_bin_path(char *env_path, char *bin)
+{
+	int		i;
+	char	*bin_path;
+
+	i = 0;
+	while (env_path[i])
+	{
+		if (env_path[i] != ':')
+		{
+			bin_path = test_path(env_path + i, bin);
+			if (bin_path)
+				return (bin_path);
+			while (env_path[i] && env_path[i] != ':')
+				i++;
+		}
+		else
+			i++;
+	}
+	return (bin_path);
+}
+
+char	**get_cmd_argv(char *cmd)
+{
+	return (ft_split(cmd, ' '));
+}
+
+// Ex print:
+//	zsh: no such file or directory: nofile
+void	ft_perror(char *s1, char *s2)
+{
+	ft_fprintf(2, "%s: %s: %s\n", s1, strerror(errno), s2);
+}
+
+void	init_arrcmd(t_cmd *arrcmd, int numcmd)
+{
+	int	i;
+
+	i = 0;
+	while (i < numcmd)
+	{
+		arrcmd[i].pid = -1;
+		arrcmd[i].pathname = NULL;
+		arrcmd[i].argv = NULL;
+		i++;
+	}
+}
+
+// Child only needs to close read end of next pipe
+void	exec_child(t_pipex d, int i, int to_close)
+{
+	close(to_close);
+	execve
+}
+
+// Returns fd pointing to infile
+// fd might be a pipe read end (heredoc)
+int	open_infile(t_pipex d)
+{
+	// how do we handle heredoc
+	// we need to open stdin and read line by line
+	// get next line will be perfect here
+	// not sure whether we should stop reading at read returning 0
+	// the shell doesn't really seem to do that (or sometimes it does sometimes it doesn't)
+	// actually, zsh never allows you to press ctrl D to end input
+	// bash does allow you but only if the line is empty, then it prints a warning that
+	//	it encountered EOF when it was expecting the limiter
+	// sh allows you to ctrl D on empty lines AND non-empty (but have to press twice)
+	//	and it doesn't give any warning or message or anything
+	// so any behavior like any of these shells or any in-between should be ok
+	// the simplest is probably to handle like zsh, keep reading forever until limiter
+	// we have to store these lines returned by gnl somewhere
+	// we might, btw, have to add a gnl function to free a fd in case after reading from stdin
+	//	there is memory left unfreed
+	// the way I did my gnl, it should be fine, but if not, I'll have to literally modify
+	//	my gnl function to accept 1 more arg and call it like I do open (e.g gnl(fd, GNL_OPEN)
+	//	or gnl(fd, GNL_FREE)
+	// so anyway call gnl in a while and look for the line it returns, if it contains only LIMITER
+	//	or it contains LIMITER with JUST a \n behind, we stop
+	// we have to save these lines somewhere. We can either save them as is, or concatenate them
+	//	into a big string. In this case, it might be more interesting to store them some other way
+	//	instead of using gnl (directly store them in a buffer list for example)
+	// once we reach LIMITER we stop, look at how many bytes we have, if it is > max pipe (65536)
+	//	we have to write to a temporary file (we can just name it .here_doc or whatever) after having
+	//	opened it in WRONLY, write everything to it, close the fd and reopen the file in RDONLY
+	//	and use that fd. it will be dup2 in the child process
+}
+
+// Will import libmalloc to free all
+// This is basically only useful for malloc failure, as any other type of
+//	failure only causes a "soft error": the cmd will not execute but we
+//	still continue execution.
+void	error_critical(char *err)
+{
+	ft_fprintf(2, "Critical error: %s: %s\n", err, strerror(errno));
+	exit(1);
+}
+
+void	init_data(int ac, char **av, char **ep, t_pipex *d)
+{
+	d->ac = ac;
+	d->av = av;
+	d->ep = ep;
+	d->heredoc = 0;
+	if (!ft_strcmp(av[1], HEREDOC))
+		d->heredoc = 1;
+	d->numcmd = ac - 2;
+	if (d->heredoc)
+		d->numcmd = ac - 3;
+	d->arrcmd = malloc(sizeof(*(d.arrcmd)) * numcmd);
+	if (!d->arrcmd)
+		error_critical(ERRMALLOC);
+	init_arrcmd(d->arrcmd, d->numcmd);
+}
+
+void	close_fd(int *fd)
+{
+	if (*fd != -1)
+		close(*fd);
+	*fd = -1;
+}
+
+// d short for data (since we will be writing it a lot)
+=======
 /*	|-----------------<(^-^)/-------/ Pipex V1 \-------\(^-^)>-----------------|
  *
  *	|------/    Program    \------|
@@ -103,6 +261,55 @@
  * At i == 0 and i == numcmd - 1 (at first and last cmds) we do special things (files)
  * 
 */
+>>>>>>> 7f44a8dd90e20f603eb6f5e96c1bbd417e5deff2
 int	main(int ac, char **av, char **ep)
 {
+	int		i;
+	t_pipex	d;
+
+	if (ac < 5)
+		return (0);
+	i = 0;
+	init_data(ac, av, ep, &d);
+	while (i < d.numcmd)
+	{
+		// IN ORDER
+		// 1. STDIN
+		//	a. i == 0 ? open infile and put fd in stdin
+		//		- open error ? print error, don't fork
+		//		- stdin takes -1 for next cmd
+		//	b. i != 0 ? stdin was written in last iteration so do nothing
+		//	c. dup stdin to STDIN, close stdin
+		// 2. STDOUT
+		//	a. i == n - 1 ? open outfile
+		//		- open error ? print error, don't fork
+		//		- this is last cmd anyway, close stdin from last iteration
+		//	b. i != n - 1 ? open pipe
+		//		- pipe error ? print error, don't fork
+		//		- stdin takes -1 for next cmd
+		//	c. dup pipe[1] to stdout, close pipe[1]
+		// 3. ARGV & PATHNAME
+		//	a. split argv
+		//		- malloc error ? critical exit, close stdin (double close is protected)
+		//	b. get pathname from argv[0]
+		//		- malloc error ? same as above
+		//		- critical exit should free all mallocs anyway (once I plug in libmalloc)
+		// 4. FORK
+		//	a. memorize the pid in array
+		//	b. fork closes the only fd that couldn't be closed before call: stdin (for next iter)
+		//	c. fork does an execve with pathname, argv, envp, its stdin and stdout are set
+		if (!i)
+		{
+			arrcmd[i].stdin_fd = open_infile(d);
+			if (arrcmd[i].stdin_fd == -1)
+			{
+				ft_perror(SH_NAME, );
+			}
+		}
+		else if (i + 1 == numcmd)
+		arrcmd[i].pathname = 
+		arrcmd[i].pid = fork();
+
+		i++;
+	}
 }
