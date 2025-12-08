@@ -6,7 +6,7 @@
 /*   By: rapohlen <rapohlen@student.42.fr>          +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2025/12/08 09:49:50 by rapohlen          #+#    #+#             */
-/*   Updated: 2025/12/08 12:41:28 by rapohlen         ###   ########.fr       */
+/*   Updated: 2025/12/08 20:50:11 by rapohlen         ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
@@ -17,6 +17,9 @@
 #define HEREDOC		"here_doc"
 
 #define ERRMALLOC	"Malloc failure"
+#define ERRPIPE		"pipe failure"
+#define ERRDUP		"dup failure"
+#define ERRFORK		"fork failure"
 
 /*	|-----------------<(^-^)/-------/ Pipex V1 \-------\(^-^)>-----------------|
  *
@@ -133,17 +136,45 @@ typedef struct s_cmd
 	char	*argv;
 }	t_cmd;
 
+// path is the path from envp starting after the '='
 // numcmd is the number of commands to be run
-// heredoc is non-0 if it was defined in args
+// heredoc is 1 if it was defined in args, 0 if not
 // arrcmd is the array of cmds (containing relevant cmd data such as pathname)
+// stdin_next is the memorized fd for next command's stdin
 typedef struct s_pipex
 {
 	int		ac;
 	char	**av;
 	char	**ep;
+	char	*path;
+	int		stdin_next;
 	int		numcmd;
 	int		heredoc;
 	t_cmd	*arrcmd;
 }	t_pipex;
+
+// usage.c
+int	usage(void);
+int	usage_heredoc(void);
+
+// path.c
+int		get_bin_path(char *env_path, char *bin, char **bin_path);
+char	*get_path_from_env(char **ep);
+
+// argv.c
+char	**get_cmd_argv(char *cmd);
+
+// error.c
+void	ft_perror(char *s1, char *s2);
+
+// pipe.c
+int		resolve_stdin(t_pipex *d, int i);
+
+// open.c
+int	open_infile(t_pipex d);
+int	open_outfile(t_pipex d);
+
+// util.c
+void	safe_close(int &fd);
 
 #endif
