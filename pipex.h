@@ -6,20 +6,34 @@
 /*   By: rapohlen <rapohlen@student.42.fr>          +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2025/12/08 09:49:50 by rapohlen          #+#    #+#             */
-/*   Updated: 2025/12/08 20:50:11 by rapohlen         ###   ########.fr       */
+/*   Updated: 2025/12/10 18:59:49 by rapohlen         ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
 #ifndef PIPEX_H
 # define PIPEX_H
 
-#define SH_NAME		"zsh"
-#define HEREDOC		"here_doc"
+# define SH_NAME	"zsh"
+# define HEREDOC	"here_doc"
+# define DEVNULL	"/dev/null"
 
-#define ERRMALLOC	"Malloc failure"
-#define ERRPIPE		"pipe failure"
-#define ERRDUP		"dup failure"
-#define ERRFORK		"fork failure"
+# define PIPE_MAX	65536
+
+# define ERRMALLOC	"malloc failure"
+# define ERRPIPE	"pipe failure"
+# define ERRDUP		"dup failure"
+# define ERRFORK	"fork failure"
+
+# define ERRPATH	"command not found"
+
+# include <fcntl.h>
+# include <unistd.h>
+# include <stdlib.h>
+# include <errno.h>
+# include <string.h>
+# include <sys/wait.h>
+
+# include "libft.h"
 
 /*	|-----------------<(^-^)/-------/ Pipex V1 \-------\(^-^)>-----------------|
  *
@@ -75,72 +89,71 @@
  *	|------/    Program    \------|
  *	|------\     steps     /------|
  *
- * 0. Note that mallocs are all made in the parent so they can be freed after
- *	   `wait`ing for all the children. Also note that `open`s and `pipe`s are
- *	   all closed as fast as possible since they will be duplicated in children
- *	   (and therefore also need to be closed in the children if not in the
- *	   parent).
- *	  There are many things to do before `execve`ing the processes. They can
- *	   be done in almost any order. The order described is the one I chose, but
- *	   there are many more possibilities.
- *	  Description of what needs to be done:
- *		- Split commands so we can send argv to `execve`
- *		- Search for a valid bin in PATH to be sent to `execve`
- *		- Create pipes between commands (n - 1 pipes for n commands)
- *		- Attempt to open files for cmd1 and cmdn
- *	  In the case of here_doc, the very first operation has to be reading stdin.
- *	  Nothing will happen (no command will run) until heredoc has been resolved.
- * ...
- * ...
- * ...
+ * 1. Init:
+ *		- Verify args
+ *		- Figure out path from envp
+ *		- Figure out whether we're doing heredoc
+ *		- Figure out the number of commands to execve
+ *	  We are not piping, duping or building any command argv/pathname yet
+ * 2. Main program loop:
+ *		- For each command:
+ *			- Open file/heredoc or re-use last pipe's read to dup stdin
+ *			- Open file or create a new pipe, dup its write to stdout
+ *			- Build its argv to send to execve
+ *			- Build its pathname
+ *			If any of the 4 previous steps fail, print an error, go to next cmd
+ *			- Fork, child closes other end of stdout pipe, and execs cmd
+ * 3. Exit:
+ *		- All fds were progressively closed
+ *		- Wait for all children and free their argv + pathname
+ *		- Done \(^-^)/
  *
- * Get numcmd from args (whether heredoc or not, if not, argc - 3, if so, argc - 4)
- * Handle heredoc if needed
- *	--> stuff..
- * Start a while which will run numcmd times
- * For each iteration, we want to execve the cmd in a fork, so we have to fork
- * Before forking we have to build argv and find the bin's path
- * bin path and argv are both malloc'd, we need to remember those mallocs.
- * they should be memorized in a structure and we will do an array of that struct (of numcmd len)
- * that struct should have argv, pathname, stdin, stdout
- * we obvly need to open files (for 1st and last) and pipes - redirection is done in children
- * for non-1st and non-last we only need to:
- *	1. Open a pipe (so cmd stdout can be written to new pipe write) - we cant close anything
- *		on that pipe yet
- *	2. Close the write of the last pipe made (only need read for this cmd)
- *	3. Close the read of the before-last pipe made
- * At i == 0 and i == numcmd - 1 (at first and last cmds) we do special things (files)
- * 
- * Note: the only thing we're doing in the child is dup2 of stdin/stdout
- * stdin/stdout are automatically closed at exit so it should be fine to leave them open
- * all mallocs are freed in parent
- * child inherits very few fd's from parent, but they should still be closed, especially
- *	after dup, so it would be a good idea to have a free_all_fd function
- *	also since whatever the parent closed has the value -1 we can just close a couple fds per child
+ * Note that most operations are done in the parent process, that is before
+ *	any forks. This behavior diverges from bash's (it seems that bash dups
+ *	in its forks right before execve).
+ * The reason is to simplify program structure. The only fd that the child has
+ *	to close this way is the other end of its stdout pipe (next cmd's stdin).
+ *
+ * Also note that soft errors (can't open file, pipe or dup failure, no path
+ *	found) do not cause program failure, they only stop the current cmd's
+ *	execution. The only critical error for which we stop completely is malloc
+ *	failure.
+ *
+ * Finally, note that we do not wait for children until the end of the loop.
+ *	As such, all cmds are executed in parallel. A "sleep 1 | sleep 1" won't
+ *	cause a total sleep of 2. A "yes | head" command won't run forever.
 */
 
-// we can dup2 in parent instead of child. this way a dup error can be handled a bit better.
-// we should do as much as possible in the parent instead of the child
-// the only thing we can't do in the parent is close the read of the
-//	out-pipe, since we need it for the next cmd
-// this means having a stdin_fd and stdout_fd in the struct might be useless
-
-// PID is filled at fork
-// pathname contains bin path (NULL if no bin found)
-// argv contains split command
-// stdin_fd and stdout_fd contain the original fd before dup2
+/*	t_cmd struct
+ *
+ * Contains cmd info for waiting and freeing at program exit. Self-explanatory.
+ * Used as an array of [numcmd] length.
+*/
 typedef struct s_cmd
 {
 	int		pid;
 	char	*pathname;
-	char	*argv;
+	char	**argv;
 }	t_cmd;
 
-// path is the path from envp starting after the '='
-// numcmd is the number of commands to be run
-// heredoc is 1 if it was defined in args, 0 if not
-// arrcmd is the array of cmds (containing relevant cmd data such as pathname)
-// stdin_next is the memorized fd for next command's stdin
+/*	t_pipex struct
+ *
+ * Main program struct. Contains data relevant throughout all of the program.
+ *
+ * ac			-
+ * av			-
+ * ep			-
+ * path			Starts at index 5 (skips 'P' 'A' 'T' 'H' '=')
+ *				Can be NULL, commands will just not be found
+ * stdin_next	Holds read end of the most recently opened pipe
+ *				It is closed in the child and duped to next command's stdin
+ *				All other fds are duped right after opening, then closed
+ * dev_null		Contains /dev/null fd (only if we need it)
+ * numcmd		-
+ * heredoc		1 if heredoc is on, 0 if not
+ *				Its value is used directly in index calculation to fetch strings
+ * arrcmd		-
+*/
 typedef struct s_pipex
 {
 	int		ac;
@@ -148,33 +161,46 @@ typedef struct s_pipex
 	char	**ep;
 	char	*path;
 	int		stdin_next;
+	int		dev_null;
 	int		numcmd;
 	int		heredoc;
 	t_cmd	*arrcmd;
 }	t_pipex;
 
+// pipex.c
+void	pipex(t_pipex d);
+
+// init.c exit.c
+void	init_pipex(int ac, char **av, char **ep, t_pipex *d);
+void	exit_pipex(t_pipex d, int exitval);
+
 // usage.c
-int	usage(void);
-int	usage_heredoc(void);
-
-// path.c
-int		get_bin_path(char *env_path, char *bin, char **bin_path);
-char	*get_path_from_env(char **ep);
-
-// argv.c
-char	**get_cmd_argv(char *cmd);
+int		usage(void);
+int		usage_heredoc(void);
 
 // error.c
-void	ft_perror(char *s1, char *s2);
-
-// pipe.c
-int		resolve_stdin(t_pipex *d, int i);
+void	ft_perror(char *s);
+void	ft_perror_syscall(char *s);
+void	ft_perror_path(char *s);
+void	critical_error(t_pipex d, char *s);
 
 // open.c
-int	open_infile(t_pipex d);
-int	open_outfile(t_pipex d);
+//	Used in resolve_stdin() resolve_stdout()
+int		open_devnull(t_pipex *d, int *fd);
+int		open_infile(t_pipex d, int *fd); //TODO HEREDOC
+int		open_outfile(t_pipex d, int *fd);
+
+// pipe.c argv.c path.c
+int		resolve_stdin(t_pipex *d, int i);
+int		resolve_stdout(t_pipex *d, int i);
+int		resolve_argv(t_pipex d, int i);
+int		resolve_pathname(t_pipex d, int i);
 
 // util.c
-void	safe_close(int &fd);
+//	Simplify syscall usage (e.g set fd to -1 after close)
+void	free_argv(char **argv);
+void	safe_close(int *fd);
+int		safe_pipe(int pipefd[2]);
+int		safe_dup2(int *old, int new);
 
 #endif

@@ -1,28 +1,27 @@
 /* ************************************************************************** */
 /*                                                                            */
 /*                                                        :::      ::::::::   */
-/*   argv.c                                             :+:      :+:    :+:   */
+/*   main.c                                             :+:      :+:    :+:   */
 /*                                                    +:+ +:+         +:+     */
 /*   By: rapohlen <rapohlen@student.42.fr>          +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
-/*   Created: 2025/12/08 14:47:42 by rapohlen          #+#    #+#             */
-/*   Updated: 2025/12/10 16:05:11 by rapohlen         ###   ########.fr       */
+/*   Created: 2025/12/10 15:09:01 by rapohlen          #+#    #+#             */
+/*   Updated: 2025/12/10 17:34:15 by rapohlen         ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
 #include "pipex.h"
 
-// Pretty simple for now, but will get more complicated in V2
-// As we need to handle quotes and brackets and maybe more
-static char	**get_cmd_argv(char *cmd)
+// See program steps in header file
+int	main(int ac, char **av, char **ep)
 {
-	return (ft_split(cmd, ' '));
-}
+	t_pipex	data;
 
-int	resolve_argv(t_pipex d, int i)
-{
-	d.arrcmd[i].argv = get_cmd_argv(d.av[i + 2 + d.heredoc]);
-	if (!d.arrcmd[i].argv)
-		critical_error(d, ERRMALLOC);
-	return (1);
+	if (ac < 5)
+		return (usage());
+	init_pipex(ac, av, ep, &data);
+	if (data.heredoc && ac < 6)
+		return (usage_heredoc());
+	pipex(data);
+	exit_pipex(data, 0);
 }

@@ -6,160 +6,40 @@
 /*   By: rapohlen <rapohlen@student.42.fr>          +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2025/12/07 14:30:39 by rapohlen          #+#    #+#             */
-/*   Updated: 2025/12/08 20:49:51 by rapohlen         ###   ########.fr       */
+/*   Updated: 2025/12/10 20:23:07 by rapohlen         ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
-#include <pipex.h>
-
-// Returns fd pointing to infile
-// fd might be a pipe read end (heredoc)
-int	open_infile(t_pipex d)
-{
-	// how do we handle heredoc
-	// we need to open stdin and read line by line
-	// get next line will be perfect here
-	// not sure whether we should stop reading at read returning 0
-	// the shell doesn't really seem to do that (or sometimes it does sometimes it doesn't)
-	// actually, zsh never allows you to press ctrl D to end input
-	// bash does allow you but only if the line is empty, then it prints a warning that
-	//	it encountered EOF when it was expecting the limiter
-	// sh allows you to ctrl D on empty lines AND non-empty (but have to press twice)
-	//	and it doesn't give any warning or message or anything
-	// so any behavior like any of these shells or any in-between should be ok
-	// the simplest is probably to handle like zsh, keep reading forever until limiter
-	// we have to store these lines returned by gnl somewhere
-	// we might, btw, have to add a gnl function to free a fd in case after reading from stdin
-	//	there is memory left unfreed
-	// the way I did my gnl, it should be fine, but if not, I'll have to literally modify
-	//	my gnl function to accept 1 more arg and call it like I do open (e.g gnl(fd, GNL_OPEN)
-	//	or gnl(fd, GNL_FREE)
-	// so anyway call gnl in a while and look for the line it returns, if it contains only LIMITER
-	//	or it contains LIMITER with JUST a \n behind, we stop
-	// we have to save these lines somewhere. We can either save them as is, or concatenate them
-	//	into a big string. In this case, it might be more interesting to store them some other way
-	//	instead of using gnl (directly store them in a buffer list for example)
-	// once we reach LIMITER we stop, look at how many bytes we have, if it is > max pipe (65536)
-	//	we have to write to a temporary file (we can just name it .here_doc or whatever) after having
-	//	opened it in WRONLY, write everything to it, close the fd and reopen the file in RDONLY
-	//	and use that fd. it will be dup2 in the child process
-}
-
-// Will import libmalloc to free all
-// This is basically only useful for malloc failure, as any other type of
-//	failure only causes a "soft error": the cmd will not execute but we
-//	still continue execution.
-void	error_critical(char *err)
-{
-	ft_fprintf(2, "Critical error: %s: %s\n", err, strerror(errno));
-	exit(1);
-}
-void	close_fd(int *fd)
-{
-	if (*fd != -1)
-		close(*fd);
-	*fd = -1;
-}
+#include "pipex.h"
 
 // d short for data (since we will be writing it a lot)
-int	main(int ac, char **av, char **ep)
+void	pipex(t_pipex d)
 {
-	t_pipex	d;
-	int		i;
-	int		fork_ret;
+	int	i;
 
-	if (ac < 5)
-		return (usage());
-	init_data(ac, av, ep, &d);
-	if (d.heredoc && ac < 6)
-		return (usage_heredoc());
 	i = 0;
 	while (i < d.numcmd)
 	{
-		// IN ORDER
-		// 1. STDIN
-		//	a. i == 0 ? open infile and put fd in stdin
-		//		- open error ? print error, don't fork
-		//		- stdin takes -1 for next cmd
-		//	b. i != 0 ? stdin was written in last iteration so do nothing
-		//	c. dup stdin to STDIN, close stdin
-		// 2. STDOUT
-		//	a. i == n - 1 ? open outfile
-		//		- open error ? print error, don't fork
-		//		- this is last cmd anyway, close stdin from last iteration
-		//	b. i != n - 1 ? open pipe
-		//		- pipe error ? print error, don't fork
-		//		- stdin takes -1 for next cmd
-		//	c. dup pipe[1] to stdout, close pipe[1]
-		// 3. ARGV & PATHNAME
-		//	a. split argv
-		//		- malloc error ? critical exit, close stdin (double close is protected)
-		//	b. get pathname from argv[0]
-		//		- malloc error ? same as above
-		//		- critical exit should free all mallocs anyway (once I plug in libmalloc)
-		// 4. FORK
-		//	a. memorize the pid in array
-		//	b. fork closes the only fd that couldn't be closed before call: stdin (for next iter)
-		//	c. fork does an execve with pathname, argv, envp, its stdin and stdout are set from parent
 		if (resolve_stdin(&d, i) && resolve_stdout(&d, i)
-			&& resolve_argv() && resolve_pathname())
+			&& resolve_argv(d, i) && resolve_pathname(d, i))
 		{
-			fork_ret = fork();
-			if (fork_ret && fork_ret != -1)
-			{
-				close(stdin_fd);
-				execve(d.arrcmd[i].pathname, d.arrcmd[i].argv, ep);
-			}
-			else if (fork_ret == -1)
+			d.arrcmd[i].pid = fork();
+			if (d.arrcmd[i].pid == -1)
 				ft_perror_syscall(ERRFORK);
-			else
-				d.arrcmd[i].pid = fork();
+			else if (!d.arrcmd[i].pid)
+			{
+				ft_fprintf(2, "pipex: child %d:", i);
+				safe_close(&(d.dev_null));
+				if (i + 1 < d.numcmd)
+				{
+					ft_fprintf(2, " closing %d\n", d.stdin_next);
+					close(d.stdin_next);
+				}
+				else
+					ft_fprintf(2, "\n");
+				execve(d.arrcmd[i].pathname, d.arrcmd[i].argv, d.ep);
+			}
 		}
 		i++;
 	}
 }
-
-// Got a couple choices for this pipex that I haven't resolved yet
-// 1. Libmalloc or no
-//	- This simplifies malloc management, but there are very very few mallocs in this
-//	- It also complexifies some other stuff, like having to have an up-to-date list
-//		of open fds at all times so I can also close them in case of panic exit
-//	- It might create race conditions if I panic exit after having execve'd some
-//		processes already, and can create lots of problems (freeing argv that a program
-//		is using)
-//	All in all the answer for this one seems no (and maybe libmalloc is never useful, idk)
-// 2. Fill info before or during
-//	- Can do all the argv splitting, pathname finding, file opening, piping etc...
-//		BEFORE the execve and forks loop
-//	- Or I can do it DURING the loop
-//	- In case #2, a failed malloc can happen after I already execve'd a couple progs
-//	- In case #1, a failed malloc means we exit before doing anything else
-//	- #1 and #2 are both well written and organized, but just in different ways
-//		#1 is organized in the sense that everything is written beforehand and filed
-//		in a neat structure array
-//		#2 is organized in the sense that everything happens right when we need it to
-//		happen and not a moment before - it happens in sequence and any soft error
-//		can be handled directly where and when it happens instead of delaying it
-//	- I was going for #2 by default and it does seem like there isn't much diff in
-//		"elegance" between both approaches. Both seem valid in their own way.
-//	The answer for this seems to be #2 which is what I was already doing
-// 3. Hardcore argv management or no
-//	- Meaning do we handle quotes or no. $() for stuff found in env, or no.
-//		How do we handle awk brackets. Etc...
-//	- This is "out of scope" meaning it's clearly not the project's point.
-//	- Not only this, but we will handle this constraint very soon in minishell.
-//	Therefore, the answer seems to be that there's absolutely no need.
-//	I can still go for it (maybe just double quotes) for fun, but when you consider
-//		just how many exceptions and tricky details there are in such an endeavour,
-//		such as "f""i""l"""""e"""" having to be sent as file, it seems like a clear
-//		waste of time and more tedious than anything else. Best left for minishell.
-//	Answer is no
-// 4. Heredoc using gnl or using a custom read func
-//	- GNL is already here and working, it could be a waste not to use it.
-//	- However, it's not very optimized for what we're doing. It mallocs each line
-//		separately, and we would then have to either free and strjoin (very simple but
-//		also very inefficient), or store them in maybe a chained list (tedious)
-//	- A simple read could directly store everything in a chained list of fixed size
-//		buffers, it wouldn't be very hard to implement, but it's more work. Just for
-//		sake of slight optimization.
-//	Answer is probably yes. At least, let's try to make it and if I'm lazy, whatevs.
