@@ -6,7 +6,7 @@
 /*   By: rapohlen <rapohlen@student.42.fr>          +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2025/12/07 14:30:39 by rapohlen          #+#    #+#             */
-/*   Updated: 2025/12/10 20:23:07 by rapohlen         ###   ########.fr       */
+/*   Updated: 2025/12/11 12:46:15 by rapohlen         ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
@@ -28,15 +28,9 @@ void	pipex(t_pipex d)
 				ft_perror_syscall(ERRFORK);
 			else if (!d.arrcmd[i].pid)
 			{
-				ft_fprintf(2, "pipex: child %d:", i);
 				safe_close(&(d.dev_null));
 				if (i + 1 < d.numcmd)
-				{
-					ft_fprintf(2, " closing %d\n", d.stdin_next);
 					close(d.stdin_next);
-				}
-				else
-					ft_fprintf(2, "\n");
 				execve(d.arrcmd[i].pathname, d.arrcmd[i].argv, d.ep);
 			}
 		}

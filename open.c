@@ -6,7 +6,7 @@
 /*   By: rapohlen <rapohlen@student.42.fr>          +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2025/12/08 20:00:57 by rapohlen          #+#    #+#             */
-/*   Updated: 2025/12/10 20:20:36 by rapohlen         ###   ########.fr       */
+/*   Updated: 2025/12/11 12:46:51 by rapohlen         ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
@@ -41,7 +41,6 @@ int	open_infile(t_pipex d, int *fd)
 	else
 	{
 		*fd = open(d.av[1], O_RDONLY);
-		ft_fprintf(2, "pipex: opening file [%d]\n", *fd);
 		if (*fd == -1)
 		{
 			ft_perror(d.av[1]);
@@ -57,7 +56,6 @@ int	open_outfile(t_pipex d, int *fd)
 		*fd = open(d.av[d.ac - 1], O_WRONLY | O_CREAT | O_APPEND, 0644);
 	else
 		*fd = open(d.av[d.ac - 1], O_WRONLY | O_CREAT | O_TRUNC, 0644);
-	ft_fprintf(2, "pipex: opening file [%d]\n", *fd);
 	if (*fd == -1)
 	{
 		ft_perror(d.av[d.ac - 1]);

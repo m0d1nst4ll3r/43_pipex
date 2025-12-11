@@ -6,7 +6,7 @@
 /*   By: rapohlen <rapohlen@student.42.fr>          +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2025/12/08 14:53:56 by rapohlen          #+#    #+#             */
-/*   Updated: 2025/12/10 19:04:05 by rapohlen         ###   ########.fr       */
+/*   Updated: 2025/12/11 12:43:29 by rapohlen         ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
@@ -38,6 +38,8 @@ void	exit_pipex(t_pipex d, int exitval)
 {
 	safe_close(&(d.stdin_next));
 	safe_close(&(d.dev_null));
+	close(STDIN_FILENO);
+	close(STDOUT_FILENO);
 	if (d.arrcmd)
 		free_arrcmd(d.arrcmd, d.numcmd);
 	exit(exitval);

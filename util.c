@@ -6,7 +6,7 @@
 /*   By: rapohlen <rapohlen@student.42.fr>          +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2025/12/08 20:18:30 by rapohlen          #+#    #+#             */
-/*   Updated: 2025/12/10 20:12:27 by rapohlen         ###   ########.fr       */
+/*   Updated: 2025/12/11 12:46:35 by rapohlen         ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
@@ -32,7 +32,6 @@ void	safe_close(int *fd)
 {
 	if (*fd != -1)
 	{
-		ft_fprintf(2, "pipex: closing fd [%d]\n", *fd);
 		close(*fd);
 		*fd = -1;
 	}
@@ -47,7 +46,6 @@ int	safe_pipe(int pipefd[2])
 		ft_perror_syscall(ERRPIPE);
 		return (1);
 	}
-	ft_fprintf(2, "pipex: opening pipe [%d][%d]\n", pipefd[0], pipefd[1]);
 	return (0);
 }
 
@@ -55,7 +53,6 @@ int	safe_pipe(int pipefd[2])
 //	set it to -1 in case of failure
 int	safe_dup2(int *old, int new)
 {
-	ft_fprintf(2, "pipex: duping fd [%d] to [%d]\n", *old, new);
 	if (*old != -1 && new != -1 && dup2(*old, new) == -1)
 	{
 		ft_perror_syscall(ERRDUP);
