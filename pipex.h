@@ -6,24 +6,26 @@
 /*   By: rapohlen <rapohlen@student.42.fr>          +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2025/12/08 09:49:50 by rapohlen          #+#    #+#             */
-/*   Updated: 2025/12/10 18:59:49 by rapohlen         ###   ########.fr       */
+/*   Updated: 2025/12/11 21:00:34 by rapohlen         ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
 #ifndef PIPEX_H
 # define PIPEX_H
 
-# define SH_NAME	"zsh"
+# define SH_NAME	"pipex"
 # define HEREDOC	"here_doc"
+# define HERED_FILE	".heredoc"
 # define DEVNULL	"/dev/null"
 
 # define PIPE_MAX	65536
+# define BSIZE		64
+# define WR_TIMEOUT	10
 
 # define ERRMALLOC	"malloc failure"
-# define ERRPIPE	"pipe failure"
+# define ERRPIPE	"mipe failure"
 # define ERRDUP		"dup failure"
 # define ERRFORK	"fork failure"
-
 # define ERRPATH	"command not found"
 
 # include <fcntl.h>
@@ -124,6 +126,17 @@
  *	cause a total sleep of 2. A "yes | head" command won't run forever.
 */
 
+/*	t_heredoc struct
+ *
+ * This is the heredoc buffer. It contains lines read from stdin.
+*/
+typedef struct s_heredoc
+{
+	char				*line;
+	size_t				len;
+	struct s_heredoc	*next;
+}	t_heredoc;
+
 /*	t_cmd struct
  *
  * Contains cmd info for waiting and freeing at program exit. Self-explanatory.
@@ -168,39 +181,49 @@ typedef struct s_pipex
 }	t_pipex;
 
 // pipex.c
-void	pipex(t_pipex d);
+void		pipex(t_pipex d);
 
 // init.c exit.c
-void	init_pipex(int ac, char **av, char **ep, t_pipex *d);
-void	exit_pipex(t_pipex d, int exitval);
+void		init_pipex(int ac, char **av, char **ep, t_pipex *d);
+void		exit_pipex(t_pipex d, int exitval);
 
 // usage.c
-int		usage(void);
-int		usage_heredoc(void);
+int			usage(void);
+int			usage_heredoc(void);
 
 // error.c
-void	ft_perror(char *s);
-void	ft_perror_syscall(char *s);
-void	ft_perror_path(char *s);
-void	critical_error(t_pipex d, char *s);
+void		ft_perror(char *s);
+void		ft_perror_syscall(char *s);
+void		ft_perror_path(char *s);
+void		critical_error(t_pipex d, char *s);
 
 // open.c
 //	Used in resolve_stdin() resolve_stdout()
-int		open_devnull(t_pipex *d, int *fd);
-int		open_infile(t_pipex d, int *fd); //TODO HEREDOC
-int		open_outfile(t_pipex d, int *fd);
+int			open_devnull(t_pipex *d, int *fd);
+int			open_infile(t_pipex d, int *fd); //TODO HEREDOC
+int			open_outfile(t_pipex d, int *fd);
 
 // pipe.c argv.c path.c
-int		resolve_stdin(t_pipex *d, int i);
-int		resolve_stdout(t_pipex *d, int i);
-int		resolve_argv(t_pipex d, int i);
-int		resolve_pathname(t_pipex d, int i);
+int			resolve_stdin(t_pipex *d, int i);
+int			resolve_stdout(t_pipex *d, int i);
+int			resolve_argv(t_pipex d, int i);
+int			resolve_pathname(t_pipex d, int i);
+
+// heredoc.c
+int			get_input(t_heredoc **begin, char *limiter);
+size_t		get_input_len(t_heredoc *input);
+int			heredoc_file(t_heredoc *input);
+int			heredoc_pipe(t_heredoc *input);
 
 // util.c
 //	Simplify syscall usage (e.g set fd to -1 after close)
-void	free_argv(char **argv);
-void	safe_close(int *fd);
-int		safe_pipe(int pipefd[2]);
-int		safe_dup2(int *old, int new);
+void		free_argv(char **argv);
+void		safe_close(int *fd);
+int			safe_pipe(int pipefd[2]);
+int			safe_dup2(int *old, int new);
+
+// lst_util.c
+t_heredoc	*add_line(t_heredoc **begin, t_heredoc *cur, char *line);
+void		clear_input(t_heredoc *input);
 
 #endif

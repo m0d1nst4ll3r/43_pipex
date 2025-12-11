@@ -6,7 +6,7 @@
 /*   By: rapohlen <rapohlen@student.42.fr>          +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2025/12/08 20:00:57 by rapohlen          #+#    #+#             */
-/*   Updated: 2025/12/11 12:46:51 by rapohlen         ###   ########.fr       */
+/*   Updated: 2025/12/11 21:06:21 by rapohlen         ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
@@ -26,12 +26,32 @@ int	open_devnull(t_pipex *d, int *fd)
 	return (0);
 }
 
+static int	open_heredoc(t_pipex d)
+{
+	t_heredoc	*input;
+	int			ret;
+
+	input = NULL;
+	ret = get_input(&input, d.av[2]);
+	if (ret == -1)
+		return (-1);
+	else if (ret)
+	{
+		clear_input(input);
+		critical_error(d, ERRMALLOC);
+	}
+	if (get_input_len(input) > PIPE_MAX)
+		return (heredoc_file(input));
+	else
+		return (heredoc_pipe(input));
+}
+
 // TODO TODO TODO TODO TODO TODO TODO TODO TODO HEREDOC
 int	open_infile(t_pipex d, int *fd)
 {
 	if (d.heredoc)
 	{
-		*fd = 0;//get_heredoc(/*TODO*/);
+		*fd = open_heredoc(d);
 		if (*fd == -1)
 		{
 			ft_perror(HEREDOC);
@@ -63,4 +83,3 @@ int	open_outfile(t_pipex d, int *fd)
 	}
 	return (0);
 }
-
