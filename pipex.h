@@ -6,7 +6,7 @@
 /*   By: rapohlen <rapohlen@student.42.fr>          +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2025/12/08 09:49:50 by rapohlen          #+#    #+#             */
-/*   Updated: 2025/12/11 21:00:34 by rapohlen         ###   ########.fr       */
+/*   Updated: 2025/12/13 14:12:04 by rapohlen         ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
@@ -37,7 +37,7 @@
 
 # include "libft.h"
 
-/*	|-----------------<(^-^)/-------/ Pipex V1 \-------\(^-^)>-----------------|
+/*	|-----------------\(^-^)\-------/ Pipex V1 \-------/(^-^)/-----------------|
  *
  *	|------/    Program    \------|
  *	|------\  description  /------|
@@ -200,7 +200,7 @@ void		critical_error(t_pipex d, char *s);
 // open.c
 //	Used in resolve_stdin() resolve_stdout()
 int			open_devnull(t_pipex *d, int *fd);
-int			open_infile(t_pipex d, int *fd); //TODO HEREDOC
+int			open_infile(t_pipex d, int *fd);
 int			open_outfile(t_pipex d, int *fd);
 
 // pipe.c argv.c path.c

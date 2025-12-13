@@ -6,7 +6,7 @@
 /*   By: rapohlen <rapohlen@student.42.fr>          +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2025/12/11 15:52:46 by rapohlen          #+#    #+#             */
-/*   Updated: 2025/12/11 21:02:02 by rapohlen         ###   ########.fr       */
+/*   Updated: 2025/12/13 14:30:06 by rapohlen         ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
@@ -31,7 +31,10 @@ t_heredoc	*add_line(t_heredoc **begin, t_heredoc *cur, char *line)
 
 	new = malloc(sizeof(*new));
 	if (!new)
+	{
+		free(line);
 		return (NULL);
+	}
 	new->line = line;
 	new->len = ft_strlen(line);
 	new->next = NULL;

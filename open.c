@@ -6,7 +6,7 @@
 /*   By: rapohlen <rapohlen@student.42.fr>          +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2025/12/08 20:00:57 by rapohlen          #+#    #+#             */
-/*   Updated: 2025/12/11 21:06:21 by rapohlen         ###   ########.fr       */
+/*   Updated: 2025/12/13 14:42:54 by rapohlen         ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
@@ -33,6 +33,7 @@ static int	open_heredoc(t_pipex d)
 
 	input = NULL;
 	ret = get_input(&input, d.av[2]);
+	get_next_line(STDIN_FILENO, GNL_FREE);
 	if (ret == -1)
 		return (-1);
 	else if (ret)
@@ -46,7 +47,6 @@ static int	open_heredoc(t_pipex d)
 		return (heredoc_pipe(input));
 }
 
-// TODO TODO TODO TODO TODO TODO TODO TODO TODO HEREDOC
 int	open_infile(t_pipex d, int *fd)
 {
 	if (d.heredoc)

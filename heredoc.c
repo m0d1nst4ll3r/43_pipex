@@ -6,7 +6,7 @@
 /*   By: rapohlen <rapohlen@student.42.fr>          +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2025/12/11 14:08:54 by rapohlen          #+#    #+#             */
-/*   Updated: 2025/12/11 21:08:54 by rapohlen         ###   ########.fr       */
+/*   Updated: 2025/12/13 14:30:16 by rapohlen         ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
@@ -62,7 +62,7 @@ int	get_input(t_heredoc **begin, char *limiter)
 	limiter_len = ft_strlen(limiter);
 	while (1)
 	{
-		line = get_next_line(STDIN_FILENO);
+		line = get_next_line(STDIN_FILENO, 0);
 		if (!line)
 			continue ;
 		if ((!cur || cur->line[cur->len - 1] == '\n')
