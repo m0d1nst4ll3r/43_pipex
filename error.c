@@ -6,7 +6,7 @@
 /*   By: rapohlen <rapohlen@student.42.fr>          +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2025/12/08 14:49:06 by rapohlen          #+#    #+#             */
-/*   Updated: 2025/12/10 16:05:21 by rapohlen         ###   ########.fr       */
+/*   Updated: 2025/12/15 20:17:42 by rapohlen         ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
@@ -38,5 +38,5 @@ void	critical_error(t_pipex d, char *s)
 {
 	ft_perror_syscall(s);
 	ft_fprintf(2, "Aborting...\n");
-	exit_pipex(d, 1);
+	exit_pipex(d);
 }

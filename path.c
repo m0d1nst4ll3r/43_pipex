@@ -6,7 +6,7 @@
 /*   By: rapohlen <rapohlen@student.42.fr>          +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2025/12/08 14:41:10 by rapohlen          #+#    #+#             */
-/*   Updated: 2025/12/10 18:03:14 by rapohlen         ###   ########.fr       */
+/*   Updated: 2025/12/15 20:14:49 by rapohlen         ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
@@ -53,7 +53,7 @@ int	get_bin_path(char *env_path, char *bin, char **pathname)
 	int		ret;
 	size_t	bin_len;
 
-	if (!env_path || !bin)
+	if (!env_path || !bin || !ft_strcmp(bin, ".") || !ft_strcmp(bin, ".."))
 		return (0);
 	bin_len = ft_strlen(bin);
 	i = 0;

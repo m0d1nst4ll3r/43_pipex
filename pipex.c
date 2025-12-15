@@ -6,7 +6,7 @@
 /*   By: rapohlen <rapohlen@student.42.fr>          +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2025/12/07 14:30:39 by rapohlen          #+#    #+#             */
-/*   Updated: 2025/12/11 12:46:15 by rapohlen         ###   ########.fr       */
+/*   Updated: 2025/12/15 20:16:41 by rapohlen         ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
@@ -31,7 +31,11 @@ void	pipex(t_pipex d)
 				safe_close(&(d.dev_null));
 				if (i + 1 < d.numcmd)
 					close(d.stdin_next);
-				execve(d.arrcmd[i].pathname, d.arrcmd[i].argv, d.ep);
+				if (execve(d.arrcmd[i].pathname, d.arrcmd[i].argv, d.ep) == -1)
+				{
+					ft_perror_syscall(ERREXEC);
+					exit(1);
+				}
 			}
 		}
 		i++;

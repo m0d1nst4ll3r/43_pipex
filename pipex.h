@@ -6,7 +6,7 @@
 /*   By: rapohlen <rapohlen@student.42.fr>          +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2025/12/08 09:49:50 by rapohlen          #+#    #+#             */
-/*   Updated: 2025/12/13 14:12:04 by rapohlen         ###   ########.fr       */
+/*   Updated: 2025/12/15 20:53:39 by rapohlen         ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
@@ -26,6 +26,7 @@
 # define ERRPIPE	"mipe failure"
 # define ERRDUP		"dup failure"
 # define ERRFORK	"fork failure"
+# define ERREXEC	"execve failure"
 # define ERRPATH	"command not found"
 
 # include <fcntl.h>
@@ -185,11 +186,10 @@ void		pipex(t_pipex d);
 
 // init.c exit.c
 void		init_pipex(int ac, char **av, char **ep, t_pipex *d);
-void		exit_pipex(t_pipex d, int exitval);
+void		exit_pipex(t_pipex d);
 
 // usage.c
 int			usage(void);
-int			usage_heredoc(void);
 
 // error.c
 void		ft_perror(char *s);
