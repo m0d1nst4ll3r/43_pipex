@@ -6,46 +6,63 @@
 #    By: rapohlen <rapohlen@student.42.fr>          +#+  +:+       +#+         #
 #                                                 +#+#+#+#+#+   +#+            #
 #    Created: 2025/10/08 10:29:07 by rapohlen          #+#    #+#              #
-#    Updated: 2025/12/11 20:41:55 by rapohlen         ###   ########.fr        #
+#    Updated: 2025/12/15 22:57:07 by rapohlen         ###   ########.fr        #
 #                                                                              #
 # **************************************************************************** #
 
-CC			= cc
-CFLAGS		= -Wall -Wextra -Werror -Ilibft/inc -g
+CFILES				= main.c \
+					  pipex.c \
+					  usage.c \
+					  error.c \
+					  open.c heredoc.c \
+					  pipe.c argv.c path.c \
+					  util.c lst_util.c \
+					  init.c exit.c
 
-SRC			= main.c \
-			  pipex.c \
-			  usage.c \
-			  error.c \
-			  open.c heredoc.c \
-			  pipe.c argv.c path.c \
-			  util.c lst_util.c \
-			  init.c exit.c
+SRCDIR				= src
+BUILDDIR			= .build
 
-OBJ			= $(SRC:.c=.o)
+SRC					= $(addprefix $(SRCDIR)/, $(CFILES))
+OBJ					= $(SRC:$(SRCDIR)/%.c=$(BUILDDIR)/%.o)
+DEP					= $(OBJ:.o=.d)
 
-NAME		= pipex
+NAME				= pipex
 
-LIB			= libft/libft.a
+INC					= inc \
+					  libft/inc
+LIB					= libft/libft.a
 
-all:		$(NAME)
+CC					= cc
+CFLAGS				= -Wall -Wextra -Werror
+CPPFLAGS			= $(addprefix -I,$(INC)) -MMD -MP
+MAKEFLAGS			+= --no-print-directory -j
 
-bonus:		all
+all:				$(NAME)
 
-$(NAME):	$(OBJ) $(LIB) 
-			$(CC) $(CFLAGS) -o $@ $^
+bonus:				$(NAME)
+
+$(NAME):			$(OBJ) $(LIB)
+					$(CC) $(CFLAGS) $(CPPFLAGS) -o $@ $^
 
 $(LIB):
-			$(MAKE) -C libft
+					$(MAKE) -C $(@D)
+
+$(BUILDDIR)/%.o:	$(SRCDIR)/%.c
+					@mkdir -p $(@D)
+					$(CC) $(CFLAGS) $(CPPFLAGS) -c -o $@ $<
 
 clean:
-			$(MAKE) clean -C libft
-			rm -f $(OBJ)
+					@for f in $(dir $(LIB)); do $(MAKE) -C $$f clean; done
+					rm -rf $(BUILDDIR)
 
-fclean:		clean
-			$(MAKE) fclean -C libft
-			rm -f $(NAME)
+fclean:
+					@for f in $(dir $(LIB)); do $(MAKE) -C $$f fclean; done
+					rm -rf $(NAME) $(BUILDDIR)
 
-re:			fclean all
+re:
+					$(MAKE) fclean
+					$(MAKE) all
 
-.PHONY: clean fclean all
+-include $(DEP)
+
+.PHONY: clean fclean re
