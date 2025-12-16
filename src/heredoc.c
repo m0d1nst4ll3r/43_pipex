@@ -6,7 +6,7 @@
 /*   By: rapohlen <rapohlen@student.42.fr>          +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2025/12/11 14:08:54 by rapohlen          #+#    #+#             */
-/*   Updated: 2025/12/15 20:37:39 by rapohlen         ###   ########.fr       */
+/*   Updated: 2025/12/16 11:21:53 by rapohlen         ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
@@ -66,7 +66,7 @@ int	get_input(t_heredoc **begin, char *limiter)
 		if (!line)
 			continue ;
 		if ((!cur || cur->line[cur->len - 1] == '\n')
-			&& !strncmp(line, limiter, limiter_len)
+			&& !ft_strncmp(line, limiter, limiter_len)
 			&& (!line[limiter_len] || line[limiter_len] == '\n'))
 		{
 			free(line);

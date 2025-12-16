@@ -6,7 +6,7 @@
 /*   By: rapohlen <rapohlen@student.42.fr>          +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2025/12/08 14:53:56 by rapohlen          #+#    #+#             */
-/*   Updated: 2025/12/15 21:06:12 by rapohlen         ###   ########.fr       */
+/*   Updated: 2025/12/16 11:22:39 by rapohlen         ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
@@ -48,6 +48,5 @@ void	exit_pipex(t_pipex d)
 	exitstatus = 0;
 	if (d.arrcmd)
 		exitstatus = free_arrcmd(d.arrcmd, d.numcmd);
-	ft_fprintf(2, "Exit status: %d\n", exitstatus);
 	exit(exitstatus);
 }
